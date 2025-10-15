@@ -1,9 +1,9 @@
 import {StyleSheet, Text, View} from 'react-native';
 import React from 'react';
-import CoinListScreen from './src/CoinsListScreen/CoinsListScreen';
+import RootNavigation from './src/Navigation/RootNavigation';
 
 const App = () => {
-  return <CoinListScreen />;
+  return <RootNavigation />;
 };
 
 export default App;
