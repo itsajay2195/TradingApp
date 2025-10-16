@@ -125,7 +125,7 @@ export default function CoinListScreen() {
         updateCellsBatchingPeriod={50} // Delay between batch renders
         initialNumToRender={10} // Items to render initially
         removeClippedSubviews={true} // Unmount off-screen items (Android)
-        onEndReached={searchText?.length > 0 ? loadMore : null}
+        onEndReached={searchText?.length > 0 ? null : loadMore}
         contentContainerStyle={{paddingBottom: 40}}
         ListFooterComponent={
           paginationLoading ? (
