@@ -6,6 +6,7 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import SearchBar from '../../components/Searchbar/Searchbar';
 import CoinRow from './Components/CoinRow';
@@ -14,6 +15,7 @@ import LoaderComponent from './Components/LoaderComponent';
 import useBianceSocket from './hooks/useBianceSocket';
 import useCoinsSearchHook from './hooks/useCoinsSearchHook';
 import useFetchInitialCoins from './hooks/useFetchInitialCoins';
+import useHeaderAnimateHook from './hooks/useHeaderAnimateHook';
 
 CoinRow.displayName = 'CoinRow';
 
@@ -25,29 +27,8 @@ export default function CoinListScreen() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const priceBufferRef: any = useRef({});
-  const batchTimeoutRef: any = useRef(null);
-  const reconnectTimeoutRef: any = useRef(null);
+  const {animatedHeight, handleScroll} = useHeaderAnimateHook();
 
-  // Batch update mechanism - KEY OPTIMIZATION
-  // Collects multiple price updates and applies them once
-  const scheduleBatchUpdate = useCallback(() => {
-    if (batchTimeoutRef.current) return;
-
-    batchTimeoutRef.current = setTimeout(() => {
-      if (Object.keys(priceBufferRef.current).length > 0) {
-        setPrices((prev: any[]) => ({
-          ...prev,
-          ...priceBufferRef.current,
-        }));
-        priceBufferRef.current = {};
-      }
-      batchTimeoutRef.current = null;
-    }, 100); // Batch updates every 100ms - prevents excessive re-renders
-  }, []);
-
-  // Fetch initial coin list
   const {loadMore, paginationLoading} = useFetchInitialCoins({
     setCoins,
     setFilteredCoins,
@@ -55,15 +36,10 @@ export default function CoinListScreen() {
     setIsLoading,
   });
 
-  // WebSocket connection for real-time updates
   useBianceSocket({
     coins,
-    wsRef,
     setIsConnected,
-    priceBufferRef,
-    scheduleBatchUpdate,
-    reconnectTimeoutRef,
-    batchTimeoutRef,
+    setPrices,
   });
 
   const {onChangeText} = useCoinsSearchHook({
@@ -72,7 +48,6 @@ export default function CoinListScreen() {
     setSearchText,
   });
 
-  // Render item callback - wrapped in useCallback for performance
   const renderItem = useCallback(
     ({item}: any) => {
       const priceData: any = prices[item.symbol] || {
@@ -94,7 +69,6 @@ export default function CoinListScreen() {
 
   const keyExtractor = useCallback((item: {id: any}) => item.id, []);
 
-  // Item separator
   const ItemSeparator = useCallback(
     () => <View style={styles.separator} />,
     [],
@@ -108,23 +82,27 @@ export default function CoinListScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* Header */}
-      <Header isConnected={isConnected} />
+      <Animated.View
+        style={{
+          height: animatedHeight,
+          overflow: 'hidden',
+          zIndex: 10,
+        }}>
+        <Header isConnected={isConnected} />
+      </Animated.View>
 
       <SearchBar value={searchText} onChangeText={onChangeText} />
 
-      {/* Coin List with FlatList optimizations */}
-      <FlatList
+      <Animated.FlatList
         data={filteredCoins}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         ItemSeparatorComponent={ItemSeparator}
-        // PERFORMANCE OPTIMIZATIONS
-        windowSize={10} // Number of items to render outside visible area
-        maxToRenderPerBatch={10} // Max items rendered per batch
-        updateCellsBatchingPeriod={50} // Delay between batch renders
-        initialNumToRender={10} // Items to render initially
-        removeClippedSubviews={true} // Unmount off-screen items (Android)
+        windowSize={10}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        removeClippedSubviews={true}
         onEndReached={searchText?.length > 0 ? null : loadMore}
         contentContainerStyle={{paddingBottom: 40}}
         ListFooterComponent={
@@ -132,20 +110,9 @@ export default function CoinListScreen() {
             <ActivityIndicator size="large" color="#3b82f6" />
           ) : null
         }
-        // getItemLayout can be added if all items have fixed height
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       />
-
-      {/* Info Panel */}
-      {/* <View style={styles.infoPanel}>
-        <Text style={styles.infoTitle}>⚡ Performance Optimizations</Text>
-        <Text style={styles.infoText}>
-          ✓ React.memo() with custom comparison
-        </Text>
-        <Text style={styles.infoText}>✓ Batch updates every 100ms</Text>
-        <Text style={styles.infoText}>✓ FlatList windowing (10 items)</Text>
-        <Text style={styles.infoText}>✓ Real Binance WebSocket stream</Text>
-        <Text style={styles.infoText}>✓ Auto-reconnect on disconnect</Text>
-      </View> */}
     </View>
   );
 }

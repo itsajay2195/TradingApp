@@ -14,7 +14,6 @@ const CoinRow = memo(
     if (price === 0) return null;
     const isPositive = change24h >= 0;
     const changeColor = isPositive ? '#16a34a' : '#dc2626';
-    console.log('volume>>', volume);
     return (
       <View style={styles.row}>
         <View style={styles.coinInfo}>

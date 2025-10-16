@@ -1,5 +1,5 @@
 import {StyleSheet} from 'react-native';
-import {useEffect, useRef} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import {current} from '@reduxjs/toolkit';
 
 interface PriceBufferItem {
@@ -10,28 +10,45 @@ interface PriceBufferItem {
 
 interface UseBianceProps {
   coins: {symbol: string}[]; // tighten if you have a better coin type
-  wsRef: React.MutableRefObject<WebSocket | null>;
-  priceBufferRef: React.MutableRefObject<Record<string, PriceBufferItem>>;
-  reconnectTimeoutRef: React.MutableRefObject<ReturnType<
+  wsRef?: React.MutableRefObject<WebSocket | null>;
+  priceBufferRef?: React.MutableRefObject<Record<string, PriceBufferItem>>;
+  reconnectTimeoutRef?: React.MutableRefObject<ReturnType<
     typeof setTimeout
   > | null>;
-  batchTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
+  batchTimeoutRef?: React.MutableRefObject<ReturnType<
+    typeof setTimeout
+  > | null>;
   setIsConnected: (val: boolean) => void;
-  scheduleBatchUpdate: () => void;
+  setPrices: any;
 }
 
 const useBianceSocket = ({
   coins,
-  wsRef,
   setIsConnected,
-  priceBufferRef,
-  scheduleBatchUpdate,
-  reconnectTimeoutRef,
-  batchTimeoutRef,
+  setPrices,
 }: UseBianceProps): void => {
   // Keep coins in ref to avoid dependency issues with pagination
+  const priceBufferRef: any = useRef({});
+  const batchTimeoutRef: any = useRef(null);
+  const reconnectTimeoutRef: any = useRef(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const coinsRef = useRef<any[]>([]);
   const retryCountRef = useRef(0);
+
+  const scheduleBatchUpdate = useCallback(() => {
+    if (batchTimeoutRef.current) return;
+
+    batchTimeoutRef.current = setTimeout(() => {
+      if (Object.keys(priceBufferRef.current).length > 0) {
+        setPrices((prev: any) => ({
+          ...prev,
+          ...priceBufferRef.current,
+        }));
+        priceBufferRef.current = {};
+      }
+      batchTimeoutRef.current = null;
+    }, 100);
+  }, []);
 
   // Update coins ref whenever coins change (pagination)
   useEffect(() => {
