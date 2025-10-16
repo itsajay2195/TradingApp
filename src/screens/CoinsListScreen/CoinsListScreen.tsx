@@ -7,16 +7,20 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import SearchBar from '../../components/Searchbar/Searchbar';
 import CoinRow from './Components/CoinRow';
 import Header from './Components/Header';
 import LoaderComponent from './Components/LoaderComponent';
 import useBianceSocket from './hooks/useBianceSocket';
+import useCoinsSearchHook from './hooks/useCoinsSearchHook';
 import useFetchInitialCoins from './hooks/useFetchInitialCoins';
 
 CoinRow.displayName = 'CoinRow';
 
 export default function CoinListScreen() {
   const [coins, setCoins] = useState([]);
+  const [filteredCoins, setFilteredCoins] = useState([]);
+  const [searchText, setSearchText] = useState('');
   const [prices, setPrices] = useState<any>({});
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +50,7 @@ export default function CoinListScreen() {
   // Fetch initial coin list
   const {loadMore, paginationLoading} = useFetchInitialCoins({
     setCoins,
+    setFilteredCoins,
     setPrices,
     setIsLoading,
   });
@@ -59,6 +64,12 @@ export default function CoinListScreen() {
     scheduleBatchUpdate,
     reconnectTimeoutRef,
     batchTimeoutRef,
+  });
+
+  const {onChangeText} = useCoinsSearchHook({
+    coins,
+    setFilteredCoins,
+    setSearchText,
   });
 
   // Render item callback - wrapped in useCallback for performance
@@ -100,9 +111,11 @@ export default function CoinListScreen() {
       {/* Header */}
       <Header isConnected={isConnected} />
 
+      <SearchBar value={searchText} onChangeText={onChangeText} />
+
       {/* Coin List with FlatList optimizations */}
       <FlatList
-        data={coins}
+        data={filteredCoins}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         ItemSeparatorComponent={ItemSeparator}
@@ -112,7 +125,7 @@ export default function CoinListScreen() {
         updateCellsBatchingPeriod={50} // Delay between batch renders
         initialNumToRender={10} // Items to render initially
         removeClippedSubviews={true} // Unmount off-screen items (Android)
-        onEndReached={loadMore}
+        onEndReached={searchText?.length > 0 ? loadMore : null}
         contentContainerStyle={{paddingBottom: 40}}
         ListFooterComponent={
           paginationLoading ? (
@@ -140,7 +153,7 @@ export default function CoinListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
   },
   separator: {
     height: 1,
