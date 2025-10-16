@@ -1,5 +1,12 @@
 import React, {useState, useEffect, useCallback, useRef, memo} from 'react';
-import {View, Text, FlatList, StyleSheet, StatusBar} from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
 import CoinRow from './Components/CoinRow';
 import Header from './Components/Header';
 import LoaderComponent from './Components/LoaderComponent';
@@ -37,7 +44,11 @@ export default function CoinListScreen() {
   }, []);
 
   // Fetch initial coin list
-  useFetchInitialCoins({setCoins, setPrices, setIsLoading});
+  const {loadMore, paginationLoading} = useFetchInitialCoins({
+    setCoins,
+    setPrices,
+    setIsLoading,
+  });
 
   // WebSocket connection for real-time updates
   useBianceSocket({
@@ -101,6 +112,13 @@ export default function CoinListScreen() {
         updateCellsBatchingPeriod={50} // Delay between batch renders
         initialNumToRender={10} // Items to render initially
         removeClippedSubviews={true} // Unmount off-screen items (Android)
+        onEndReached={loadMore}
+        contentContainerStyle={{paddingBottom: 40}}
+        ListFooterComponent={
+          paginationLoading ? (
+            <ActivityIndicator size="large" color="#3b82f6" />
+          ) : null
+        }
         // getItemLayout can be added if all items have fixed height
       />
 
