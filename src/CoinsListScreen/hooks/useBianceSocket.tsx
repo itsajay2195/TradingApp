@@ -1,5 +1,6 @@
 import {StyleSheet} from 'react-native';
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
+import {current} from '@reduxjs/toolkit';
 
 interface PriceBufferItem {
   price: number;
@@ -28,41 +29,50 @@ const useBianceSocket = ({
   reconnectTimeoutRef,
   batchTimeoutRef,
 }: UseBianceProps): void => {
+  // Keep coins in ref to avoid dependency issues with pagination
+  const coinsRef = useRef<any[]>([]);
+  const retryCountRef = useRef(0);
+
+  // Update coins ref whenever coins change (pagination)
   useEffect(() => {
-    if (coins.length === 0) return;
+    coinsRef.current = coins;
+  }, [coins]);
+
+  useEffect(() => {
+    if (coinsRef?.current?.length === 0) return;
 
     const connectWebSocket = () => {
       try {
-        // Binance WebSocket - streams all ticker data
-        // This provides real-time price updates for all trading pairs
         const ws = new WebSocket(
           'wss://stream.binance.com:9443/ws/!ticker@arr',
         );
         wsRef.current = ws;
 
         ws.onopen = () => {
-          // console.log('WebSocket Connected');
+          console.log('WebSocket Connected');
           setIsConnected(true);
+          retryCountRef.current = 0; // Reset retry count on success
         };
 
         ws.onmessage = event => {
           try {
             const tickers = JSON.parse(event.data);
-            // console.log('tickers>>>', tickers);
+
             // Process only USDT pairs for coins we're tracking
-            console.log('ticker>>', tickers);
             tickers.forEach(
-              (ticker: {s: string; symbol: any; c: any; P: any; q: any}) => {
+              (ticker: {s: string; c: string; P: string; q: string}) => {
                 if (ticker.s.endsWith('USDT')) {
                   const symbol = ticker.s.replace('USDT', '');
 
-                  // Check if this coin is in our list
-                  if (coins.some((coin: any) => coin.symbol === symbol)) {
+                  // Check if this coin is in our list (using ref, not props)
+                  if (
+                    coinsRef.current.some((coin: any) => coin.symbol === symbol)
+                  ) {
                     // Add to buffer instead of immediate state update
                     priceBufferRef.current[symbol] = {
-                      price: parseFloat(ticker.c), // Current price
-                      change24h: parseFloat(ticker.P), // 24h price change percentage
-                      volume: parseFloat(ticker.q), // 24h volume
+                      price: parseFloat(ticker.c),
+                      change24h: parseFloat(ticker.P),
+                      volume: parseFloat(ticker.q),
                     };
                   }
                 }
@@ -81,15 +91,34 @@ const useBianceSocket = ({
           setIsConnected(false);
         };
 
-        ws.onclose = () => {
-          console.log('WebSocket Disconnected');
+        ws.onclose = event => {
+          console.log('WebSocket Disconnected - Code:', event.code);
           setIsConnected(false);
 
-          // Reconnect after 5 seconds
+          // Don't reconnect on normal closure (1000)
+          if (event.code === 1000) {
+            return;
+          }
+
+          // Exponential backoff reconnection
+          const delay = Math.min(
+            1000 * Math.pow(2, retryCountRef.current),
+            30000,
+          );
+          retryCountRef.current++;
+
+          console.log(
+            `Reconnecting in ${delay}ms (attempt ${retryCountRef.current})`,
+          );
+
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Reconnecting...');
-            connectWebSocket();
-          }, 5000);
+            if (retryCountRef.current < 10) {
+              connectWebSocket();
+            } else {
+              console.error('Max reconnection attempts reached');
+              setIsConnected(false);
+            }
+          }, delay);
         };
       } catch (error) {
         console.error('Error creating WebSocket:', error);
@@ -110,9 +139,9 @@ const useBianceSocket = ({
         clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, [coins, scheduleBatchUpdate]);
+    // Only depend on scheduleBatchUpdate - coins changes won't disconnect socket
+  }, [coinsRef.current, scheduleBatchUpdate]);
 };
 
 export default useBianceSocket;
-
 const styles = StyleSheet.create({});

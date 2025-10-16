@@ -11,9 +11,10 @@ interface CoinRowProps {
 }
 const CoinRow = memo(
   ({coin, price, change24h, volume}: CoinRowProps) => {
+    if (price === 0) return null;
     const isPositive = change24h >= 0;
     const changeColor = isPositive ? '#16a34a' : '#dc2626';
-
+    console.log('volume>>', volume);
     return (
       <View style={styles.row}>
         <View style={styles.coinInfo}>
@@ -38,11 +39,11 @@ const CoinRow = memo(
             {isPositive ? '+' : ''}
             {change24h?.toFixed(2)}%
           </Text>
-          {volume && (
+          {volume ? (
             <Text style={styles.volume}>
-              Vol: ${(volume / 1000000).toFixed(1)}M
+              Vol: ${(volume / 1000000)?.toFixed(1)}M
             </Text>
-          )}
+          ) : null}
         </View>
       </View>
     );
