@@ -2,12 +2,14 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 
 interface InitialProps {
   setCoins: (val: any) => void;
+  setFilteredCoins: (val: any) => void;
   setPrices: (val: any) => void;
   setIsLoading: (val: any) => void;
 }
 
 const useFetchInitialCoins = ({
   setCoins,
+  setFilteredCoins,
   setPrices,
   setIsLoading,
 }: InitialProps) => {
@@ -66,6 +68,7 @@ const useFetchInitialCoins = ({
         const unique = Array.from(
           new Map(merged.map(item => [item.id, item])).values(),
         );
+        setFilteredCoins(unique);
         return unique;
       });
 

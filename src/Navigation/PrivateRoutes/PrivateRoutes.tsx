@@ -1,7 +1,7 @@
 import {StyleSheet, Text, View} from 'react-native';
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import CoinListScreen from '../../CoinsListScreen/CoinsListScreen';
+import CoinListScreen from '../../screens/CoinsListScreen/CoinsListScreen';
 
 const Stack = createNativeStackNavigator();
 const PrivateRoutes = () => {
