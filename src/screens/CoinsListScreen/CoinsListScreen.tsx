@@ -103,7 +103,7 @@ export default function CoinListScreen() {
         updateCellsBatchingPeriod={50}
         initialNumToRender={10}
         removeClippedSubviews={true}
-        onEndReached={searchText?.length > 0 ? null : loadMore}
+        // onEndReached={searchText?.length > 0 ? null : loadMore}
         contentContainerStyle={{paddingBottom: 40}}
         ListFooterComponent={
           paginationLoading ? (
