@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import SearchBar from '../../components/Searchbar/Searchbar';
+import {usePrices} from '../../context/PriceContext';
 import CoinRow from './Components/CoinRow';
 import Header from './Components/Header';
 import LoaderComponent from './Components/LoaderComponent';
@@ -23,10 +24,9 @@ export default function CoinListScreen() {
   const [coins, setCoins] = useState([]);
   const [filteredCoins, setFilteredCoins] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [prices, setPrices] = useState<any>({});
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
+  const {prices, setPrices} = usePrices();
   const {animatedHeight, handleScroll} = useHeaderAnimateHook();
 
   const {loadMore, paginationLoading} = useFetchInitialCoins({
