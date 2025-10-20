@@ -55,6 +55,7 @@ export default function CoinListScreen() {
         change24h: 0,
         volume: 0,
       };
+
       return (
         <CoinRow
           coin={item}
