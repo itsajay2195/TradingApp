@@ -1,21 +1,48 @@
-import {memo} from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {memo, useCallback, useState} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import Icon from '../../../components/IconComponent/IconComponent';
+import {formatPrice, formatVolume} from '../../../utils/coinlistUtils';
+import {useWatchlist} from '../../WatchListScreen/hooks/useWatchListHook';
 
 // Memoized coin row component - CRITICAL for performance
 
 interface CoinRowProps {
-  coin: {symbol: any; name: string};
+  coin: {symbol: any; name: string; id?: any; isWatched: boolean};
   price: number;
   change24h: number;
   volume: any;
+  onWatchlistPress?: any;
+  showFavIcon?: boolean;
 }
 const CoinRow = memo(
-  ({coin, price, change24h, volume}: CoinRowProps) => {
+  ({
+    coin,
+    price,
+    change24h,
+    volume,
+    onWatchlistPress,
+    showFavIcon = false,
+  }: CoinRowProps) => {
+    const [isInWatchList, setIsInWatchlist] = useState(coin?.isWatched);
+    const onFavPress = useCallback(() => {
+      setIsInWatchlist((prev: boolean) => !prev);
+      try {
+        // onWatchlistPress();
+        onWatchlistPress(coin, isInWatchList);
+      } catch (error) {
+        setIsInWatchlist((prev: boolean) => !prev);
+      }
+    }, [isInWatchList]);
     if (price === 0) return null;
     const isPositive = change24h >= 0;
     const changeColor = isPositive ? '#16a34a' : '#dc2626';
+
     return (
-      <View style={styles.row}>
+      <TouchableOpacity
+        style={styles.coinRow}
+        //  onPress={onPress}
+        activeOpacity={0.7}>
+        {/* Left: Icon + Name */}
         <View style={styles.coinInfo}>
           <View style={styles.iconContainer}>
             <Text style={styles.iconText}>{coin?.symbol.slice(0, 2)}</Text>
@@ -26,36 +53,60 @@ const CoinRow = memo(
           </View>
         </View>
 
-        <View style={styles.priceInfo}>
-          <Text style={styles.price}>
-            $
-            {price?.toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: price < 1 ? 4 : 2,
-            })}
-          </Text>
-          <Text style={[styles.change, {color: changeColor}]}>
-            {isPositive ? '+' : ''}
-            {change24h?.toFixed(2)}%
-          </Text>
-          {volume ? (
-            <Text style={styles.volume}>
-              Vol: ${(volume / 1000000)?.toFixed(1)}M
-            </Text>
+        {/* Right: Price + Change + Heart */}
+        <View style={styles.coinRight}>
+          <View style={styles.priceContainer}>
+            <Text style={styles.coinPrice}>${formatPrice(price)}</Text>
+            <View style={[styles.changeContainer]}>
+              <Text style={[styles.changeText, {color: changeColor}]}>
+                {isPositive ? '↑' : '↓'} {Math.abs(change24h).toFixed(2)}%
+              </Text>
+            </View>
+            {volume > 0 && (
+              <Text style={styles.volumeText}>
+                Vol: ${formatVolume(volume)}
+              </Text>
+            )}
+          </View>
+
+          {/* Heart Icon */}
+          {showFavIcon ? (
+            <TouchableOpacity
+              onPress={onFavPress}
+              style={styles.heartButton}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <Icon
+                library={'Entypo'}
+                name={isInWatchList ? 'heart' : 'heart-outlined'}
+                size={20}
+                //  color={isWatched ? "blue":}
+              />
+            </TouchableOpacity>
           ) : null}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   },
   (
-    prevProps: {price: any; change24h: any; volume: any},
-    nextProps: {price: any; change24h: any; volume: any},
+    prevProps: {
+      price: any;
+      change24h: any;
+      volume: any;
+      coin: {symbol: any; name: string; id?: any; isWatched?: boolean};
+    },
+    nextProps: {
+      price: any;
+      change24h: any;
+      volume: any;
+      coin: {symbol: any; name: string; id?: any; isWatched?: boolean};
+    },
   ) => {
     // Custom comparison - only re-render if data actually changed
     return (
       prevProps.price === nextProps.price &&
       prevProps.change24h === nextProps.change24h &&
-      prevProps.volume === nextProps.volume
+      prevProps.volume === nextProps.volume &&
+      prevProps.coin.isWatched === nextProps.coin.isWatched
     );
   },
 );
@@ -63,6 +114,85 @@ const CoinRow = memo(
 export default CoinRow;
 
 const styles = StyleSheet.create({
+  coinRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  coinLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  coinIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  coinIconText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  coinInfo: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  coinSymbol: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: 0.2,
+  },
+  coinName: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+
+  // Price Section
+  coinRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  priceContainer: {
+    alignItems: 'flex-end',
+  },
+  coinPrice: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  changeContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 2,
+  },
+  changeText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  volumeText: {
+    fontSize: 11,
+    color: '#9ca3af',
+    marginTop: 2,
+  },
+
+  // Heart Button
+  heartButton: {
+    padding: 4,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f9fafb',
@@ -121,11 +251,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
   },
-  coinInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
   iconContainer: {
     width: 40,
     height: 40,
@@ -152,6 +277,8 @@ const styles = StyleSheet.create({
   },
   priceInfo: {
     alignItems: 'flex-end',
+    gap: 10,
+    flexDirection: 'row',
   },
   price: {
     fontSize: 16,

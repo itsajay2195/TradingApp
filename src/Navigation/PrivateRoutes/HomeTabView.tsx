@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, {Suspense, lazy} from 'react';
 import {
   Animated,
   View,
@@ -8,20 +8,27 @@ import {
 } from 'react-native';
 import {TabView, SceneMap} from 'react-native-tab-view';
 import Icon from '../../components/IconComponent/IconComponent';
-import CoinListScreen from '../../screens/CoinsListScreen/CoinsListScreen';
-import WatchlistScreen from '../../screens/WatchListScreen/WatchlistScreen';
+import {PriceProvider} from '../../context/PriceContext';
+import {WatchListProvider} from '../../context/WatchlistContext';
 
-const FirstRoute = () => <CoinListScreen />;
-const SecondRoute = () => <WatchlistScreen />;
+const CoinListScreen = lazy(
+  () => import('../../screens/CoinsListScreen/CoinsListScreen'),
+);
+const WatchlistScreen = lazy(
+  () => import('../../screens/WatchListScreen/WatchlistScreen'),
+);
 
-{
-  /* <Icon
-  library={'Ionicons'}
-  name={'search'}
-  size={20}
-  style={styles.iconStyle}
-/>; */
-}
+const FirstRoute = () => (
+  <Suspense fallback={null}>
+    <CoinListScreen />
+  </Suspense>
+);
+
+const SecondRoute = () => (
+  <Suspense fallback={null}>
+    <WatchlistScreen />
+  </Suspense>
+);
 
 export default class HomeTabView extends React.Component {
   state = {
@@ -92,12 +99,16 @@ export default class HomeTabView extends React.Component {
 
   render() {
     return (
-      <TabView
-        navigationState={this.state}
-        renderScene={this._renderScene}
-        renderTabBar={this._renderTabBar}
-        onIndexChange={this._handleIndexChange}
-      />
+      <WatchListProvider>
+        <PriceProvider>
+          <TabView
+            navigationState={this.state}
+            renderScene={this._renderScene}
+            renderTabBar={this._renderTabBar}
+            onIndexChange={this._handleIndexChange}
+          />
+        </PriceProvider>
+      </WatchListProvider>
     );
   }
 }
