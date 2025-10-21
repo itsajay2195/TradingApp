@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import SearchBar from '../../components/Searchbar/Searchbar';
 import {usePrices} from '../../context/PriceContext';
+import {useWatchlist} from '../WatchListScreen/hooks/useWatchListHook';
 import CoinRow from './Components/CoinRow';
 import Header from './Components/Header';
 import LoaderComponent from './Components/LoaderComponent';
@@ -47,7 +48,7 @@ export default function CoinListScreen() {
     setFilteredCoins,
     setSearchText,
   });
-
+  const {handleWatchlistPress} = useWatchlist({setCoins, setFilteredCoins});
   const renderItem = useCallback(
     ({item}: any) => {
       const priceData: any = prices[item.symbol] || {
@@ -62,10 +63,11 @@ export default function CoinListScreen() {
           price={priceData.price}
           change24h={priceData.change24h}
           volume={priceData.volume}
+          onWatchlistPress={handleWatchlistPress}
         />
       );
     },
-    [prices],
+    [prices, handleWatchlistPress],
   );
 
   const keyExtractor = useCallback((item: {id: any}) => item.id, []);

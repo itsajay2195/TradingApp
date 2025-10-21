@@ -1,6 +1,8 @@
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useState, useRef} from 'react';
 import {Alert} from 'react-native';
-import {watchlistStorage} from '../../../constants/mmkvConstants';
+import {createMMKV} from 'react-native-mmkv';
+
+export const watchlistStorage = createMMKV();
 
 interface WatchlistCoin {
   id: string;
@@ -8,33 +10,23 @@ interface WatchlistCoin {
   name: string;
   addedAt: number;
 }
-export const useWatchlist = () => {
-  const [watchlist, setWatchlist] = useState<WatchlistCoin[]>([]);
 
-  useEffect(() => {
-    loadWatchlist();
-  }, []);
+export const useWatchlist = ({setCoins, setFilteredCoins}: any) => {
+  const [watchlist, setWatchlist] = useState<any[]>([]);
+  const isInitialized = useRef(false);
 
-  const loadWatchlist = useCallback(() => {
-    try {
-      const saved = watchlistStorage.getString('watchlist');
-      if (saved) {
-        setWatchlist(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.error('Error loading watchlist:', error);
-    }
-  }, []);
-
+  // // ✅ Add to watchlist
   const addToWatchlist = useCallback(
     (coin: any) => {
       try {
         const exists = watchlist.some(w => w.id === coin.id);
-        if (exists) {
-          Alert.alert('Already in watchlist', `${coin.name} is already saved`);
-          return false;
-        }
-
+        setCoins((prev: any) => {
+          let temp = prev?.map((item: any) =>
+            item?.id === coin.id ? {...item, isWatched: true} : {...item},
+          );
+          setFilteredCoins(temp);
+          return temp;
+        });
         const newCoin: WatchlistCoin = {
           id: coin.id,
           symbol: coin.symbol,
@@ -42,43 +34,87 @@ export const useWatchlist = () => {
           addedAt: Date.now(),
         };
 
-        const updated = [...watchlist, newCoin];
-        setWatchlist(updated);
-        watchlistStorage.set('watchlist', JSON.stringify(updated));
+        setWatchlist((prev: any) => {
+          let temp = [...prev, {...newCoin}];
+          watchlistStorage.set('watchlist', JSON.stringify(temp));
+          return temp;
+        });
+
         return true;
       } catch (error) {
         console.error('Error adding to watchlist:', error);
         return false;
       }
     },
-    [watchlist],
+    [watchlist, setCoins, setFilteredCoins], // ✅ Correct dependency
   );
 
+  // // ✅ Remove from watchlist
   const removeFromWatchlist = useCallback(
     (coinId: string) => {
       try {
         const updated = watchlist.filter(w => w.id !== coinId);
-        setWatchlist(updated);
-        watchlistStorage.set('watchlist', JSON.stringify(updated));
+        setCoins((prev: any) => {
+          let temp = prev?.map((item: any) =>
+            item?.id === coinId ? {...item, isWatched: true} : item,
+          );
+          setFilteredCoins(temp);
+          return temp;
+        });
+
+        setWatchlist((prev: any[]) => {
+          let temp = prev?.filter((item: any) => item?.id !== coinId);
+          watchlistStorage.set('watchlist', JSON.stringify(temp));
+          return temp;
+        });
       } catch (error) {
         console.error('Error removing from watchlist:', error);
       }
     },
-    [watchlist],
+    [watchlist], // ✅ Correct dependency
   );
 
+  // // ✅ Check if in watchlist
   const isInWatchlist = useCallback(
     (coinId: string) => {
-      return watchlist.some(w => w.id === coinId);
+      return watchlist?.some(w => w.id === coinId);
     },
-    [watchlist],
+    [watchlist], // ✅ Correct dependency
   );
 
+  // // ✅ Handle toggle (correct dependencies)
+  const handleWatchlistPress = useCallback(
+    (coin: any, isWatched: boolean) => {
+      if (isWatched) {
+        removeFromWatchlist(coin.id);
+      } else {
+        addToWatchlist(coin);
+      }
+    },
+    [addToWatchlist, removeFromWatchlist], // ✅ Include all used functions
+  );
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (isInitialized.current) return;
+
+      try {
+        const saved = watchlistStorage.getString('watchlist');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const newRef = JSON.parse(JSON.stringify(parsed));
+          setWatchlist(newRef);
+        }
+        isInitialized.current = true;
+      } catch (error) {
+        console.error('Error loading watchlist:', error);
+      }
+    }, 500);
+  }, []);
+
   return {
-    watchlist,
-    addToWatchlist,
-    removeFromWatchlist,
-    isInWatchlist,
-    loadWatchlist,
+    handleWatchlistPress,
   };
 };
+
+export default useWatchlist;

@@ -1,4 +1,4 @@
-import {memo} from 'react';
+import {memo, useCallback, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import Icon from '../../../components/IconComponent/IconComponent';
 import {formatPrice, formatVolume} from '../../../utils/coinlistUtils';
@@ -7,19 +7,27 @@ import {useWatchlist} from '../../WatchListScreen/hooks/useWatchListHook';
 // Memoized coin row component - CRITICAL for performance
 
 interface CoinRowProps {
-  coin: {symbol: any; name: string; id?: any};
+  coin: {symbol: any; name: string; id?: any; isWatched: boolean};
   price: number;
   change24h: number;
   volume: any;
-  isWatched?: boolean;
+  onWatchlistPress?: any;
 }
 const CoinRow = memo(
-  ({coin, price, change24h, volume, isWatched = false}: CoinRowProps) => {
-    const {isInWatchlist} = useWatchlist();
+  ({coin, price, change24h, volume, onWatchlistPress}: CoinRowProps) => {
+    const [isInWatchList, setIsInWatchlist] = useState(coin?.isWatched);
+    const onFavPress = useCallback(() => {
+      setIsInWatchlist((prev: boolean) => !prev);
+      try {
+        // onWatchlistPress();
+        onWatchlistPress(coin, isInWatchList);
+      } catch (error) {
+        setIsInWatchlist((prev: boolean) => !prev);
+      }
+    }, []);
     if (price === 0) return null;
     const isPositive = change24h >= 0;
     const changeColor = isPositive ? '#16a34a' : '#dc2626';
-    const watched = isInWatchlist(coin?.id);
 
     return (
       <TouchableOpacity
@@ -55,12 +63,12 @@ const CoinRow = memo(
 
           {/* Heart Icon */}
           <TouchableOpacity
-            //  onPress={onWatchlistPress}
+            onPress={onFavPress}
             style={styles.heartButton}
             hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
             <Icon
               library={'Entypo'}
-              name={isWatched ? 'heart' : 'heart-outlined'}
+              name={isInWatchList ? 'heart' : 'heart-outlined'}
               size={20}
               //  color={isWatched ? "blue":}
             />
@@ -70,14 +78,25 @@ const CoinRow = memo(
     );
   },
   (
-    prevProps: {price: any; change24h: any; volume: any},
-    nextProps: {price: any; change24h: any; volume: any},
+    prevProps: {
+      price: any;
+      change24h: any;
+      volume: any;
+      coin: {symbol: any; name: string; id?: any; isWatched?: boolean};
+    },
+    nextProps: {
+      price: any;
+      change24h: any;
+      volume: any;
+      coin: {symbol: any; name: string; id?: any; isWatched?: boolean};
+    },
   ) => {
     // Custom comparison - only re-render if data actually changed
     return (
       prevProps.price === nextProps.price &&
       prevProps.change24h === nextProps.change24h &&
-      prevProps.volume === nextProps.volume
+      prevProps.volume === nextProps.volume &&
+      prevProps.coin.isWatched === nextProps.coin.isWatched
     );
   },
 );

@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {watchlistStorage} from '../../WatchListScreen/hooks/useWatchListHook';
 
 interface InitialProps {
   setCoins: (val: any) => void;
@@ -45,15 +46,19 @@ const useFetchInitialCoins = ({
         setHasmore(false);
         return;
       }
-
+      const saved: string = watchlistStorage.getString('watchlist') || '[]';
+      const parsedSaved: any[] = JSON.parse(saved);
+      console.log('parsedSaved>>', parsedSaved);
       const coinList = data.map(
-        (coin: {id: any; symbol: any; name: string}) => ({
-          id: coin.id,
-          symbol: coin.symbol.toUpperCase(),
-          name: coin.name,
-        }),
+        (coin: {id: any; symbol: any; name: string}) => {
+          return {
+            id: coin.id,
+            symbol: coin.symbol.toUpperCase(),
+            name: coin.name,
+            isWatched: parsedSaved?.some((w: any) => w.id === coin?.id),
+          };
+        },
       );
-
       const initialPrices: any = {};
       data.forEach((coin: any) => {
         initialPrices[coin.symbol.toUpperCase()] = {
