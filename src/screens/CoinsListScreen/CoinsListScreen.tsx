@@ -64,13 +64,17 @@ export default function CoinListScreen() {
           change24h={priceData.change24h}
           volume={priceData.volume}
           onWatchlistPress={handleWatchlistPress}
+          showFavIcon={true}
         />
       );
     },
     [prices, handleWatchlistPress],
   );
 
-  const keyExtractor = useCallback((item: {id: any}) => item.id, []);
+  const keyExtractor = useCallback(
+    (item: {id: any}, index: any) => `${item.id}-${index}`,
+    [],
+  );
 
   const ItemSeparator = useCallback(
     () => <View style={styles.separator} />,

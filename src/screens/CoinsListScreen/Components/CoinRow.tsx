@@ -12,9 +12,17 @@ interface CoinRowProps {
   change24h: number;
   volume: any;
   onWatchlistPress?: any;
+  showFavIcon?: boolean;
 }
 const CoinRow = memo(
-  ({coin, price, change24h, volume, onWatchlistPress}: CoinRowProps) => {
+  ({
+    coin,
+    price,
+    change24h,
+    volume,
+    onWatchlistPress,
+    showFavIcon = false,
+  }: CoinRowProps) => {
     const [isInWatchList, setIsInWatchlist] = useState(coin?.isWatched);
     const onFavPress = useCallback(() => {
       setIsInWatchlist((prev: boolean) => !prev);
@@ -24,7 +32,7 @@ const CoinRow = memo(
       } catch (error) {
         setIsInWatchlist((prev: boolean) => !prev);
       }
-    }, []);
+    }, [isInWatchList]);
     if (price === 0) return null;
     const isPositive = change24h >= 0;
     const changeColor = isPositive ? '#16a34a' : '#dc2626';
@@ -62,17 +70,19 @@ const CoinRow = memo(
           </View>
 
           {/* Heart Icon */}
-          <TouchableOpacity
-            onPress={onFavPress}
-            style={styles.heartButton}
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-            <Icon
-              library={'Entypo'}
-              name={isInWatchList ? 'heart' : 'heart-outlined'}
-              size={20}
-              //  color={isWatched ? "blue":}
-            />
-          </TouchableOpacity>
+          {showFavIcon ? (
+            <TouchableOpacity
+              onPress={onFavPress}
+              style={styles.heartButton}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <Icon
+                library={'Entypo'}
+                name={isInWatchList ? 'heart' : 'heart-outlined'}
+                size={20}
+                //  color={isWatched ? "blue":}
+              />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </TouchableOpacity>
     );

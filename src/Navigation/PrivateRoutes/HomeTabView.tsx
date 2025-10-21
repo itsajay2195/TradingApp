@@ -9,6 +9,7 @@ import {
 import {TabView, SceneMap} from 'react-native-tab-view';
 import Icon from '../../components/IconComponent/IconComponent';
 import {PriceProvider} from '../../context/PriceContext';
+import {WatchListProvider} from '../../context/WatchlistContext';
 
 const CoinListScreen = lazy(
   () => import('../../screens/CoinsListScreen/CoinsListScreen'),
@@ -98,14 +99,16 @@ export default class HomeTabView extends React.Component {
 
   render() {
     return (
-      <PriceProvider>
-        <TabView
-          navigationState={this.state}
-          renderScene={this._renderScene}
-          renderTabBar={this._renderTabBar}
-          onIndexChange={this._handleIndexChange}
-        />
-      </PriceProvider>
+      <WatchListProvider>
+        <PriceProvider>
+          <TabView
+            navigationState={this.state}
+            renderScene={this._renderScene}
+            renderTabBar={this._renderTabBar}
+            onIndexChange={this._handleIndexChange}
+          />
+        </PriceProvider>
+      </WatchListProvider>
     );
   }
 }

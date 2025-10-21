@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState, useRef} from 'react';
 import {Alert} from 'react-native';
 import {createMMKV} from 'react-native-mmkv';
+import {useWatchListHook} from '../../../context/WatchlistContext';
 
 export const watchlistStorage = createMMKV();
 
@@ -9,17 +10,17 @@ interface WatchlistCoin {
   symbol: string;
   name: string;
   addedAt: number;
+  isWatched: boolean;
 }
 
 export const useWatchlist = ({setCoins, setFilteredCoins}: any) => {
-  const [watchlist, setWatchlist] = useState<any[]>([]);
+  const {watchlist, setWatchlist} = useWatchListHook();
   const isInitialized = useRef(false);
 
   // // ✅ Add to watchlist
   const addToWatchlist = useCallback(
     (coin: any) => {
       try {
-        const exists = watchlist.some(w => w.id === coin.id);
         setCoins((prev: any) => {
           let temp = prev?.map((item: any) =>
             item?.id === coin.id ? {...item, isWatched: true} : {...item},
@@ -32,6 +33,7 @@ export const useWatchlist = ({setCoins, setFilteredCoins}: any) => {
           symbol: coin.symbol,
           name: coin.name,
           addedAt: Date.now(),
+          isWatched: true,
         };
 
         setWatchlist((prev: any) => {
@@ -53,10 +55,10 @@ export const useWatchlist = ({setCoins, setFilteredCoins}: any) => {
   const removeFromWatchlist = useCallback(
     (coinId: string) => {
       try {
-        const updated = watchlist.filter(w => w.id !== coinId);
+        console.log('remove called');
         setCoins((prev: any) => {
           let temp = prev?.map((item: any) =>
-            item?.id === coinId ? {...item, isWatched: true} : item,
+            item?.id === coinId ? {...item, isWatched: false} : item,
           );
           setFilteredCoins(temp);
           return temp;
@@ -77,7 +79,7 @@ export const useWatchlist = ({setCoins, setFilteredCoins}: any) => {
   // // ✅ Check if in watchlist
   const isInWatchlist = useCallback(
     (coinId: string) => {
-      return watchlist?.some(w => w.id === coinId);
+      return watchlist?.some((w: {id: string}) => w.id === coinId);
     },
     [watchlist], // ✅ Correct dependency
   );
@@ -97,7 +99,6 @@ export const useWatchlist = ({setCoins, setFilteredCoins}: any) => {
   useEffect(() => {
     setTimeout(() => {
       if (isInitialized.current) return;
-
       try {
         const saved = watchlistStorage.getString('watchlist');
         if (saved) {
@@ -113,6 +114,7 @@ export const useWatchlist = ({setCoins, setFilteredCoins}: any) => {
   }, []);
 
   return {
+    watchlist,
     handleWatchlistPress,
   };
 };
