@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import Icon from '../../../components/IconComponent/IconComponent';
 import {formatPrice, formatVolume} from '../../../utils/coinlistUtils';
 import {useWatchlist} from '../../WatchListScreen/hooks/useWatchListHook';
+import {useNavigation} from '@react-navigation/native';
 
 // Memoized coin row component - CRITICAL for performance
 
@@ -23,6 +24,7 @@ const CoinRow = memo(
     onWatchlistPress,
     showFavIcon = false,
   }: CoinRowProps) => {
+    const navigation: any = useNavigation();
     const [isInWatchList, setIsInWatchlist] = useState(coin?.isWatched);
     const onFavPress = useCallback(() => {
       setIsInWatchlist((prev: boolean) => !prev);
@@ -33,6 +35,10 @@ const CoinRow = memo(
         setIsInWatchlist((prev: boolean) => !prev);
       }
     }, [isInWatchList]);
+
+    const onPress = useCallback(() => {
+      navigation.navigate('COIN_DETAILS_SCREEN', {coin});
+    }, [coin]);
     if (price === 0) return null;
     const isPositive = change24h >= 0;
     const changeColor = isPositive ? '#16a34a' : '#dc2626';
@@ -40,7 +46,7 @@ const CoinRow = memo(
     return (
       <TouchableOpacity
         style={styles.coinRow}
-        //  onPress={onPress}
+        onPress={onPress}
         activeOpacity={0.7}>
         {/* Left: Icon + Name */}
         <View style={styles.coinInfo}>
