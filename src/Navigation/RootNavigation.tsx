@@ -11,6 +11,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import React from 'react';
 import PrivateRoutes from './PrivateRoutes/PrivateRoutes';
+import ErrorBoundary from '../HOC/ErrorBoundary';
 
 const RootNavigation = () => {
   return (
@@ -21,7 +22,9 @@ const RootNavigation = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 20}
             style={styles.flex1}>
-            <PrivateRoutes />
+            <ErrorBoundary>
+              <PrivateRoutes />
+            </ErrorBoundary>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </SafeAreaProvider>
